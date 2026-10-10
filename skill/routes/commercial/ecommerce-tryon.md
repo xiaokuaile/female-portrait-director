@@ -2,12 +2,24 @@
 
 # 女性人像提示词导演 Skill｜电商服装模特图 / 试衣镜 Route
 
-版本编号：`FEMALE-PORTRAIT-DIRECTOR-V1.4`
+版本编号：`FEMALE-PORTRAIT-DIRECTOR-V1.4.1`
 文档类型：风格路由母版
 所属分类：`routes/commercial/`
 route_id：`ecommerce-tryon`
 style_name：`电商服装模特图 / 试衣镜`
 适用范围：上传服装生成模特穿着效果、电商服装主图、服装展示图、小红书服装种草图、服装试衣镜、服装上身效果图、服装穿搭展示图
+
+---
+
+## 0. 原照片试穿的保真护栏
+
+上传待编辑的人物原图时，先读取 [../../core/reference-image-lock.md](../../core/reference-image-lock.md)，按原图确定人物、照片几何与修改白名单；本节优先于下文新建电商模特的默认值、商品展示优先级和模板。
+
+- “只换外套，其它不变”仅解锁目标人物的外套及必要穿着交界，保留其脸、头发、动作视线、身形、内搭裤裙配饰和其它人物的衣着；服装适应原有姿态，不移动手臂、头发或主体以展示商品。
+- 保留原有机位、透视、人数、场景、构图、尺寸比例和裁切。服装原本被遮挡或裁掉时保持该关系，不因“服装完整清晰”重裁、补出身体、删除遮挡或改成 9:16 棚拍；展示与保留要求冲突时只澄清冲突项。
+- 默认年轻东方女模、精修五官、正面站姿和新背景仅适用于没有人物原图的新建场景，不可替换原照片的身份、年龄外观或真实面部特征。
+- 图片角色必须明确：人物图为基准 `edit_target` / `identity_reference`，服装图为 `product_reference`，其中模特和背景不迁移到原图。多人物时仅编辑被明确指认的对象。
+- `identity_restage` 也只改变用户点名项目；`protected_region_edit` 的非服装区域要确定性保护并验证。只要提示词时不调用图片工具，文本试穿描述不等于已完成实图试穿。
 
 ---
 
@@ -70,6 +82,7 @@ skill/core/safety-boundary.md
 skill/core/output-format.md
 skill/core/conflict-resolution.md
 skill/core/fallback-rules.md
+skill/core/reference-image-lock.md
 skill/references/director-expansion.md
 skill/references/visual-libraries.md
 skill/style-registry.md
@@ -93,6 +106,8 @@ skill/style-registry.md
 不得添加遮挡服装主体的外套、包袋、手臂或复杂道具；
 不得把电商服装图生成成普通写真。
 ```
+
+人物自拍与服装图同时上传时，由 `tools/reference-image-generate.md` 负责多图编排，本 Route 负责服装商品还原，`core/reference-image-lock.md` 负责人物身份、外观、动作与照片几何锁定。不得为了服装展示替换用户已锁定内容。
 
 ---
 

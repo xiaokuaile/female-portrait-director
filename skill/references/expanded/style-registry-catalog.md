@@ -2,7 +2,7 @@
 
 # 女性人像提示词导演 Skill｜风格注册表与路由分流规则
 
-版本编号：`FEMALE-PORTRAIT-DIRECTOR-V1.4`
+版本编号：`FEMALE-PORTRAIT-DIRECTOR-V1.6`
 文档类型：风格注册表 / 路由分流规则文档
 适用范围：所有女性人像提示词生成、参数组合推荐、提示词优化、图片反推提示词、失败诊断、审查友好改写、Skill 内部 route / overlay / tool 调用
 核心职责：根据用户输入识别任务类型、主风格、辅助气质、扩展包、工具模式，并将请求分流到正确文档；本文件只负责注册与分流，不负责具体风格母版扩写
@@ -54,6 +54,7 @@ skill/skill.md
 skill/core/parameter-lock.md
 skill/core/conflict-resolution.md
 skill/core/fallback-rules.md
+skill/core/reference-image-lock.md
 skill/core/output-format.md
 skill/references/director-expansion.md
 skill/routes/
@@ -117,6 +118,7 @@ P10：输出格式选择
 ```text
 如果用户明确说“优化这条提示词”，先进入工具模式；
 如果用户明确说“图片反推”，先进入图片反推模式；
+如果用户明确说“保留我的五官 / 保持产品不变 / 不要提示词直接出图”，先进入参考图保留直接生成模式；
 如果用户明确说“上传服装生成电商主图”，先进入电商服装试衣 route；
 如果用户明确填写写真风格，则该风格优先；
 如果用户没有写写真风格，再根据关键词推导 route。
@@ -379,6 +381,37 @@ routes/commercial/ecommerce-tryon.md
 不得改变服装颜色、品类、版型、材质和核心装饰；
 不得添加遮挡服装的外套、包袋或复杂动作；
 平台用途只影响构图和氛围，不改变服装主体。
+```
+
+---
+
+## 5.9 参考图保留直接生成
+
+触发表达：
+
+```text
+保留我的五官
+用我的自拍
+保持产品不变
+穿上第二张图里的衣服
+不要提示词，直接出图
+```
+
+调用：
+
+```text
+tools/reference-image-generate.md
+core/reference-image-lock.md
+output-format.md → 参考图直接生成模式
+```
+
+注意：
+
+```text
+人物图片必须属于用户本人或已授权成年人物；
+图片角色不明确时先询问；
+Route 和 Overlay 不得覆盖人物身份或产品核心视觉；
+默认直接返回图片，不输出内部提示词。
 ```
 
 ---
@@ -1256,6 +1289,31 @@ status: priority
 不是廉价红金婚庆；
 不是现代礼服；
 不是颜色杂乱的古风堆砌。
+```
+
+---
+
+# 7A. V1.5 / V1.6 新增 6 个 Route 注册表
+
+以下 Route 已实现，运行时以 [../../style-registry.md](../../style-registry.md) 的轻量注册表和对应 Route 文件为准。
+
+| Route ID | 风格 | 分类 | 复合触发指纹 | 文件 |
+| --- | --- | --- | --- | --- |
+| `ultra-close-real-face` | 超近景真实人脸人像 | realism | 超近景 / 怼脸 + 未修图 + 真实皮肤微纹理 | `skill/routes/realism/ultra-close-real-face.md` |
+| `ancient-lady-dewy-makeup` | 古风贵女水光妆 | beauty | 古风贵女 + 水光显妆 / 玻璃唇 + 美妆近景 | `skill/routes/beauty/ancient-lady-dewy-makeup.md` |
+| `low-key-cinematic-photography` | 低调电影感摄影 | cinematic | 低照度 / 暗背景 + 局部连续光 / 环境光 + 可读暗部 + 低饱和电影静帧 | `skill/routes/cinematic/low-key-cinematic-photography.md` |
+| `black-pearl-dark-gold-ccd` | 黑珍珠墨金CCD曲线生活照 | curve | 夜间 + 墨金暗部 + 暗金反光 + 柔和直闪 | `skill/routes/curve/black-pearl-dark-gold-ccd.md` |
+| `soft-ccd-energetic-voluptuous` | 元气丰腴柔光CCD生活照 | curve | 元气明亮 + 丰腴自然曲线 + 亮色穿搭 + 柔闪 | `skill/routes/curve/soft-ccd-energetic-voluptuous.md` |
+| `cold-white-clear-ccd-curve` | 冷白清透CCD曲线生活照 | curve | 日间高色温 + 冷白清透 + 纤细曲线 + 极弱柔闪 | `skill/routes/curve/cold-white-clear-ccd-curve.md` |
+
+分流要求：
+
+```text
+不得只凭“CCD”“曲线”“古风”或“近景”单词触发；
+必须优先匹配完整复合指纹；
+一次只读取一个主 Route；
+第二层气质只通过兼容 Overlay 增强；
+冲突时读取 core/conflict-resolution.md 的 5.6 节。
 ```
 
 ---
@@ -2306,6 +2364,36 @@ file: skill/tools/parameter-recommend.md
 
 ---
 
+## 10.6 参考图保留直接生成工具
+
+```yaml
+tool_id: reference-image-generate
+tool_name: 参考图保留直接生成
+file: skill/tools/reference-image-generate.md
+```
+
+触发词：
+
+```text
+保留我的五官
+用我的自拍
+保持产品不变
+穿上第二张图里的衣服
+不要提示词直接出图
+```
+
+职责：
+
+```text
+区分人物、产品、风格参考和待编辑图片；
+锁定授权人物五官身份或产品核心视觉；
+编排 Route、Overlay、导演模式和图片生成能力；
+默认直接返回图片；
+保真失败时明确说明限制。
+```
+
+---
+
 # 11. 主 Route 判断规则
 
 ---
@@ -2826,6 +2914,9 @@ fantasy：古风 / 仙侠 / 东方幻想 / 角色写真
 oriental：新中式 / 旗袍 / 宋韵 / 水墨 / 禅意
 curve：身形曲线 / 纯欲 / 丰腴 / 健康线条
 commercial：电商 / 美妆 / 珠宝 / 品牌广告
+realism：超近景真实人脸 / 未修图原片 / 皮肤微纹理
+beauty：妆容特写 / 水光妆 / 美妆方向
+cinematic：低照度 / 局部连续光 / 电影静帧 / 暗部叙事
 ```
 
 新增 route 必须归入其中一个分类。

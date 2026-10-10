@@ -2,7 +2,7 @@
 
 # 女性人像提示词导演 Skill｜参数冲突处理规则
 
-版本编号：`FEMALE-PORTRAIT-DIRECTOR-V1.4`
+版本编号：`FEMALE-PORTRAIT-DIRECTOR-V1.6`
 文档类型：核心规则文档
 适用范围：所有女性人像提示词生成、风格路由、提示词优化、失败诊断、审查友好改写、图片反推提示词、参数组合推荐任务
 核心职责：当用户输入的风格、场景、服装、气质、身形、光线、滤镜、平台用途之间出现冲突时，确保系统不擅自替换用户参数，而是通过优先级、降冲突策略和导演式扩写让画面稳定成立
@@ -12,6 +12,8 @@
 ## 1. 文档定位
 
 本文件用于处理女性人像提示词导演 Skill 中的参数冲突问题。
+
+参考图模式的锁定与明确修改范围以 [reference-image-lock.md](reference-image-lock.md) 为准。照片转换不通过下文“降低复杂度”“调整构图”“稳定姿态”等策略改变已锁定原图内容；只调整用户允许的表现方式。明确改单项只解除该项的默认锁定，保留要求与修改要求本身冲突时澄清冲突项。
 
 参数冲突是导致出图不稳定、风格串味、服装跑偏、画面低俗、人物不一致、平台目标失效的主要原因之一。
 
@@ -38,6 +40,7 @@ skill/core/parameter-lock.md
 skill/core/safety-boundary.md
 skill/core/output-format.md
 skill/core/fallback-rules.md
+skill/core/reference-image-lock.md
 skill/references/director-expansion.md
 skill/references/visual-libraries.md
 skill/routes/
@@ -93,6 +96,7 @@ skill/tools/
 
 ```text
 P0：安全边界与成年边界
+P0.5：用户明确的保留要求和修改范围，及未解除的参考图模式保真锁定
 P1：用户明确填写的核心参数
 P2：用户补充要求
 P3：任务主目标
@@ -117,6 +121,7 @@ P14：overlay 气质增强
 补充要求通常是用户修正失败问题的关键，优先级很高；
 平台用途只做构图和传播目标调整，不覆盖主风格；
 overlay 只增强气质，不替代主 route。
+参考图主体锁定高于 Route、Overlay 和默认补全。
 ```
 
 ---
@@ -309,6 +314,31 @@ gufeng-xianxia / cold-xianxia-enhanced / bright-luxury-gufeng。
 
 ```text
 bright-luxury-gufeng。
+```
+
+---
+
+## 5.6 V1.5 / V1.6 新 Route 复合特征分流
+
+新 Route 不允许靠单个泛化词触发，必须匹配主目标和复合指纹：
+
+| 候选 Route | 必须优先识别的复合特征 | 让位条件 |
+| --- | --- | --- |
+| `ultra-close-real-face` | 超近景 / 怼脸 + 未修图原片 + 真实皮肤微纹理 | 商业精修头像、证件照、全身服装展示或现代产品美妆是主目标 |
+| `ancient-lady-dewy-makeup` | 古风贵女身份 + 水光显妆 / 玻璃唇 + 古装美妆近景 | 仙侠特效、红金宫廷排场、现实新中式留白或身体曲线是主目标 |
+| `low-key-cinematic-photography` | 低照度 / 暗背景 + 局部连续光 / 环境光 + 可读暗部 + 低饱和电影静帧叙事 | 夜间柔和直闪 CCD、超近景皮肤、明亮生活照、电商服装还原或只有泛化“暗调 / 电影感”是主目标 |
+| `black-pearl-dark-gold-ccd` | 夜间 + 黑珍珠 / 墨金暗部 + 暗金反光 + 柔和直闪 | 日间冷白、元气亮色、无闪光电影光或其他明确色彩体系是主目标 |
+| `soft-ccd-energetic-voluptuous` | 柔光 CCD + 元气明亮 + 丰腴自然曲线 + 亮色生活穿搭 | 冷白纤细、暗金夜色、纯欲克制或东方古典丰润是主目标 |
+| `cold-white-clear-ccd-curve` | 日间高色温 + 冷白清透 CCD + 纤细自然曲线 + 完整贴身穿搭 | 夜间墨金、元气丰腴、暖色柔光或电商还原是主目标 |
+
+处理顺序：
+
+```text
+1. 先锁定用户明确填写的写真风格；
+2. 未明确写真风格时，匹配完整复合指纹；
+3. 多条指纹同时出现时，以用户主事件、时间、主色和光线机制决定唯一 Route；
+4. 另一条风格只保留为不冲突的气质、配色或局部质感；
+5. 不能可靠区分时回退到更通用的已实现 Route，不加载两个主 Route。
 ```
 
 ---
