@@ -2,7 +2,7 @@
 
 # 女性人像提示词导演 Skill
 
-输入少量写真参数，生成一张人物、动作、服装、场景、镜头与光线彼此成立的照片；也可以直接出图，并保留已授权的人物或产品参考主体。
+输入少量写真参数，生成一份人物、动作、服装、场景、镜头与光线彼此成立的提示词。宿主连接合适的图像工具时，也可以编排直接出图或授权参考图编辑。
 
 [![skills.sh](https://skills.sh/b/liyue-aigc/female-portrait-director)](https://skills.sh/liyue-aigc/female-portrait-director)
 [![GitHub stars](https://img.shields.io/github/stars/liyue-aigc/female-portrait-director?style=flat)](https://github.com/liyue-aigc/female-portrait-director/stargazers)
@@ -25,7 +25,7 @@
 使用开源 `skills` CLI 一键安装：
 
 ```bash
-npx skills add https://github.com/liyue-aigc/female-portrait-director/tree/main/skills/female-portrait-director -g
+npx skills@1.7.2 add https://github.com/xiaokuaile/female-portrait-director/tree/main/skills/female-portrait-director --skill female-portrait-director --agent codex --copy -g
 ```
 
 重新开始一个 Agent 对话，然后粘贴：
@@ -43,17 +43,17 @@ npx skills add https://github.com/liyue-aigc/female-portrait-director/tree/main/
 
 ## Agent 兼容性
 
-当前 `skills` CLI 已对完整的 62 文件分发包完成以下目标端安装验证：
+上游发布说明记录了完整分发包在 `skills` CLI 中针对以下目标端的安装验证：
 
 | Agent | 安装包 | 提示词工作流 | 直接生图工作流 |
 | --- | --- | --- | --- |
-| Codex | 已验证 | 已实机运行 | 宿主提供生图能力时支持 |
-| Claude Code | 已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
-| Cursor | 已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
-| GitHub Copilot | 已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
-| Gemini CLI | 已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
+| Codex | 上游已验证 | 上游环境已运行 | 取决于宿主图像工具及其编辑能力 |
+| Claude Code | 上游已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
+| Cursor | 上游已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
+| GitHub Copilot | 上游已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
+| Gemini CLI | 上游已验证 | 兼容 Agent Skills | 取决于所连接的生图工具 |
 
-“安装包已验证”表示安装器会把 `SKILL.md` 以及它引用的全部 Route、工具、安全规则和示例复制到目标 Skill 中。本次发布环境只对 Codex 做了实际运行验证；其余行表示分发结构与 Agent Skills 规范兼容，并不表示每个宿主都自带图像模型。
+“安装包已验证”表示安装器会把 `SKILL.md` 及其引用模块复制到目标 Skill。上表的实际运行结论属于上游发布环境，不能证明另一台设备已经安装、具备图像工具或通过照片编辑保真验收。本仓库提供 Markdown 指令，不内置图像模型或编辑引擎。提示词、图像工具执行、成图保真是三层独立验收，详见[验证方法](docs/reference-fidelity-validation.md)。
 
 ## 支持风格
 
@@ -88,30 +88,40 @@ npx skills add https://github.com/liyue-aigc/female-portrait-director/tree/main/
 - 将短参数扩写为可拍摄的具体瞬间，避免机械复述和填空式输出。
 - 将各模块融合为自然、完整、可直接复制的摄影导演式提示词。
 - 为电商图片保留服装展示优先级，为曲线风格保留明确的安全边界。
-- 支持授权自拍五官或产品核心视觉锁定后的参考图直接生成。
+- 使用明确的保真规则编排授权参考图生成与编辑。
+
+## 照片保真与能力边界
+
+此 fork 保留李岳的原作，并加强照片保真默认规则。照片风格转换默认使用 `source_faithful_stylization`，锁定原人物身份、面部特征、发型、服装、姿态与动作、主体数量、拍摄角度、构图和裁切。只改变用户要求的色彩、光影表现或渲染风格，风格 Route 不得自行换脸、换装或重构画面。
+
+可选的 `参考图模式` 有 `source_faithful_stylization`、`identity_restage`（只重排用户明确允许改变的项目）和 `protected_region_edit`。旧参数继续有效；需要时可补充允许改变、保护区域和原图尺寸，未填写新字段不意味着解除保护。上传图片后明确说“只要提示词”，仍只输出提示词。
+
+“原图不变”若要求原区域像素完全相同，`protected_region_edit` 必须使用确定性保护，例如保存并回贴编辑遮罩以外的原像素，再对保护区域做逐像素验证。生成式提示词本身不能保证原区域不变。宿主工具无法支持这套流程时，应在生成前说明限制，并按用户要求提供提示词或编辑方案。详见[参考图规则](skill/core/reference-image-lock.md)。
 
 ## 安装与更新
 
-一键安装需要包含 `npx` 的 [Node.js](https://nodejs.org/)。后续更新已安装的 Skill：
+此处核实的 CLI 版本为 `skills@1.7.2`，需要 [Node.js](https://nodejs.org/) `>=22.20.0` 并包含 `npx`。这里的命令安装此 fork；[原上游仓库](https://github.com/liyue-aigc/female-portrait-director)仍为作者原作。更新已有安装前，先备份本地修改，并确认安装记录指向预期的 fork 和版本。直接更新一个追踪上游的安装不会取得此 fork 的保真规则。CLI 管理的全局安装可使用以下指定技能的更新命令：
 
 ```bash
-npx skills@latest update female-portrait-director -g -y
+npx skills@1.7.2 update female-portrait-director -g
 ```
+
+在 `skills@1.7.2` 中，名称限定此 Skill，`-g` 限定全局范围；当前项目安装改用 `-p`。省略名称可能更新所选范围内全部已追踪技能。更新会沿用记录的来源并重新安装，可能替换本地修改；去掉 `-y` 不会变成预览，也不保证逐项覆盖前确认。`update` 不提供 `--agent` 筛选。执行前须核对来源并备份，详见[官方 CLI 更新说明](https://github.com/vercel-labs/skills/blob/671e8c320810d36fed80fac5f1a2c1bf7e82d812/README.md#skills-update)。
 
 ### 使用 Git 手动安装到 Codex
 
-也可以将仓库克隆到 Codex 的 skills 目录。
+也可以将完整仓库克隆到一个新的 Codex Skill 目录，根 `SKILL.md`、`skill/`、`docs/` 和 `agents/` 应一起保留。CLI 安装的是自包含的 `skills/female-portrait-director/` 分发目录。不要只复制 `SKILL.md`，也不要覆盖含本地配置的已有目录；已有安装应审查后合并，详见[安装验证](docs/reference-fidelity-validation.md)。
 
 Windows PowerShell：
 
 ```powershell
-git clone https://github.com/liyue-aigc/female-portrait-director.git "$env:USERPROFILE\.codex\skills\female-portrait-director"
+git clone https://github.com/xiaokuaile/female-portrait-director.git "$env:USERPROFILE\.codex\skills\female-portrait-director"
 ```
 
 macOS 或 Linux：
 
 ```bash
-git clone https://github.com/liyue-aigc/female-portrait-director.git "${CODEX_HOME:-$HOME/.codex}/skills/female-portrait-director"
+git clone https://github.com/xiaokuaile/female-portrait-director.git "${CODEX_HOME:-$HOME/.codex}/skills/female-portrait-director"
 ```
 
 重启 Codex 或重新开始一个对话，然后调用：
